@@ -50,7 +50,7 @@ function render(next) {
     if(!view){
       view=new PaneView(pane,state.settings,{focus,zoom,menu:paneMenu,shortcut,attention:id=>{
         const b=Array.from($('#switcher').children).find(b=>b.dataset.id===id);b?.classList.add('attention');
-      },swap:(a,b)=>{if(w.panes.some(p=>p.id===a))report(action({type:'pane-swap',a,b}));}});
+      },swap:(a,b)=>{if(workspace().panes.some(p=>p.id===a))report(action({type:'pane-swap',a,b}));}});
       views.set(pane.id,view);report(view.start());
     }
     view.update(pane,state.settings,index);
@@ -137,8 +137,9 @@ function shortcutsDialog() {
 }
 function shortcut(event) {
   if(!state || $('#dialog').open || !event.ctrlKey || !event.shiftKey || event.altKey)return false;
-  const key=event.key.toLowerCase(),w=workspace();let fn;
-  if(/^[0-9]$/.test(event.key))fn=()=>{const p=w.panes[event.key==='0'?9:Number(event.key)-1];if(p){if(zoomed)zoomed=p.id;layout();focus(p.id);views.get(p.id).card.scrollIntoView({block:'nearest'});}};
+  const key=({Comma:',',Slash:'/'}[event.code] || event.key).toLowerCase(),w=workspace();let fn;
+  const digit=/^Digit([0-9])$/.exec(event.code)?.[1];
+  if(digit)fn=()=>{const p=w.panes[digit==='0'?9:Number(digit)-1];if(p){if(zoomed)zoomed=p.id;layout();focus(p.id);views.get(p.id).card.scrollIntoView({block:'nearest'});}};
   const actions={z:()=>zoom(),t:()=>action({type:'pane-add'}),p:paletteDialog,g:searchDialog,e:broadcastDialog,r:()=>current().restart(),',':settingsDialog,w:()=>api.hide(),q:()=>api.quit(),'/':shortcutsDialog};
   fn ||= actions[key];
   if(key.startsWith('arrow'))fn=()=>{

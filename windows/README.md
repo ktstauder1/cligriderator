@@ -4,7 +4,7 @@ Native Windows edition using Electron, xterm.js and Windows ConPTY. The installe
 bundles the application runtime and terminal libraries. Users do not install
 Homebrew, WSL, Python, Node.js, Visual Studio or a package manager.
 
-Target: **Windows 10 1809 or newer / Windows 11, x64 (Intel or AMD)**.
+Target: **Windows 10 1903 or newer / Windows 11, x64 (Intel or AMD)**.
 Windows on ARM is not a verified target of this build.
 
 ## Downloads and installation
@@ -79,6 +79,7 @@ npm run dist
 
 The lockfile pins dependencies. node-pty 1.1.0 ships Windows x64 Node-API prebuilds;
 the package preserves the native modules and their helpers outside the ASAR archive.
+The app uses the included ConPTY DLL and waits for shell-exit callbacks at shutdown.
 Do not turn on native rebuilds or remove helpers without testing the installed app.
 Third-party notices are generated from the installed runtime dependencies.
 

@@ -71,3 +71,21 @@ test('terminal labels are text, palette is keyboard usable, small window stays c
   await page.setViewportSize({width:1440,height:900});
   await page.screenshot({path:'test-results/windows-grid.png'});
 });
+test('shifted number and punctuation shortcuts work from inside a terminal',async({page})=>{
+  await page.goto('http://cligrid.test/');
+  await page.getByRole('button',{name:'Focus Terminal 2',exact:true}).click();
+  await page.keyboard.press('Control+Shift+Digit1');
+  await expect(page.locator('.pane.focused .pane-title')).toHaveText('Terminal 1');
+  await page.keyboard.press('Control+Shift+Comma');
+  await expect(page.getByRole('heading',{name:'Settings',exact:true})).toBeVisible();
+});
+test('a newly added pane can be dragged onto an original pane',async({page})=>{
+  await page.goto('http://cligrid.test/');
+  await page.getByRole('button',{name:'Add terminal',exact:true}).click();
+  // Keep source and destination visible during the native HTML drag gesture.
+  await page.getByLabel('Layout',{exact:true}).selectOption('4x2');
+  const source=page.locator('.pane').filter({has:page.getByRole('heading',{name:'Terminal 7',exact:true})}).locator('.pane-header');
+  const target=page.locator('.pane').filter({has:page.getByRole('heading',{name:'Terminal 1',exact:true})}).locator('.pane-header');
+  await source.dragTo(target);
+  await expect(page.locator('#switcher button').first()).toHaveAttribute('title','Terminal 7');
+});

@@ -55,15 +55,15 @@ export class PaneView {
     }catch(error){this.showExit(null,error.message);showToast(error.message);}
   }
   snapshot(snapshot) {
-    this.term.reset();this.seq=snapshot.seq;this.exitCode=snapshot.exitCode;
+    this.term.reset();this.seq=snapshot.seq;this.exitCode=snapshot.exitCode;this.generation=snapshot.generation;
     this.term.write(snapshot.buffer);this.exitBar.hidden=true;this.status.textContent='shell';
     if(snapshot.exitCode!==null)this.showExit(snapshot.exitCode);
   }
   receive(event) {
     if(!this.ready){this.pending.push(event);return;}
-    if(event.seq<=this.seq)return;this.seq=event.seq;
+    if(event.generation!==this.generation || event.seq<=this.seq)return;this.seq=event.seq;
     if(event.type==='data') {
-      this.term.write(event.data);this.status.textContent='output';
+      this.term.write(event.data,()=>report(this.api.ack(this.id,event.generation,event.seq)));this.status.textContent='output';
       clearTimeout(this.activityTimer);this.activityTimer=setTimeout(()=>{if(this.exitCode===null)this.status.textContent='shell';},1500);
       if(!this.card.classList.contains('focused'))this.attention();
     } else this.showExit(event.exitCode);

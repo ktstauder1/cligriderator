@@ -28,7 +28,12 @@ async function confirm(message, detail) {
 }
 async function exit() {
   if (sessions.items.size && !await confirm('Stop all terminals and exit?','Running commands will end. Close the window to keep them running in the system tray.')) return;
-  quitting=true; app.quit();
+  await stopAndQuit();
+}
+async function stopAndQuit() {
+  quitting=true;
+  try { await sessions?.dispose(); app.quit(); }
+  catch(error){quitting=false;dialog.showErrorBox('Could not stop all terminals',error.message);}
 }
 function handle(channel, fn) {
   ipcMain.handle(channel,async (event,...args)=>{
@@ -45,11 +50,13 @@ function registerApi() {
     if (['pane-remove','workspace-remove'].includes(action.type) && !await confirm('Remove and stop terminals?','Running commands in the removed panes will end.')) return state;
     if (state!==previous) throw new Error('The workspace changed while confirming. Try again.');
     saveState(settingsFile,next); state=next;
-    sessions.retain(new Set(state.workspaces.flatMap(w=>w.panes.map(p=>p.id))));
-    send('state-changed',state); return state;
+    send('state-changed',state);
+    await sessions.retain(new Set(state.workspaces.flatMap(w=>w.panes.map(p=>p.id))));
+    return state;
   });
   handle('open',id=>sessions.open(findPane(id)));
   handle('input',(id,data)=>{ findPane(id); sessions.write(id,data); });
+  handle('ack',(id,generation,seq)=>sessions.acknowledge(id,generation,seq));
   handle('resize',(id,cols,rows)=>{ findPane(id); sessions.resize(id,cols,rows); });
   handle('restart',async id=>{
     const pane=findPane(id);
@@ -106,7 +113,7 @@ async function start() {
     if (url.host!=='app' || !Object.hasOwn(files,url.pathname)) return new Response('Not found',{status:404});
     return net.fetch(pathToFileURL(path.join(root,files[url.pathname])).href);
   });
-  win=new BrowserWindow({width:1440,height:900,minWidth:720,minHeight:480,show:false,title:'Cli Griderator',backgroundColor:'#15171b',icon:path.join(root,'assets/icon.png'),webPreferences:{preload:path.join(root,'src/preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true}});
+  win=new BrowserWindow({width:1440,height:900,minWidth:720,minHeight:480,show:false,title:'Cli Griderator',backgroundColor:'#15171b',icon:path.join(root,'assets/icon.png'),webPreferences:{preload:path.join(root,'src/preload.cjs'),contextIsolation:true,nodeIntegration:false,sandbox:true,backgroundThrottling:false}});
   win.webContents.session.setPermissionRequestHandler((_w,_p,done)=>done(false));
   win.webContents.session.setPermissionCheckHandler(()=>false);
   win.webContents.on('will-navigate',event=>event.preventDefault());
@@ -131,14 +138,14 @@ async function start() {
     let code=0;
     try { await runSmoke({win,sessions,state}); }
     catch (error) { console.error(error); code=1; }
-    finally { sessions.dispose(); }
+    finally { await sessions.dispose(); }
     app.exit(code);
   }
 }
 if (!smoke && !app.requestSingleInstanceLock()) app.quit();
 else {
   app.on('second-instance',()=>{ if (win) show(); });
-  app.on('before-quit',()=>{quitting=true;sessions?.dispose();});
+  app.on('before-quit',event=>{if(!quitting){event.preventDefault();void stopAndQuit();}});
   app.on('window-all-closed',()=>{});
   app.whenReady().then(start).catch(error=>{dialog.showErrorBox('Cli Griderator could not start',error.message);app.exit(1);});
 }
