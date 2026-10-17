@@ -12,10 +12,50 @@ developers and is not an application installer.
 | `cligrid-4.3.0-macos-arm64-standalone.dmg` | Apple Silicon (M-series) | 27.0.1 | Local preview build verified |
 | Intel standalone DMG | Intel (x86_64) | Determined by the build runner | Build pending |
 
-The standalone app includes Python, GTK, VTE and tmux. Recipients do not need
-Homebrew. Open the DMG, drag **Cli Griderator.app** to **Applications**, eject
-the image, and launch the app. Tools you run inside its terminals are installed
+### Download and install
+
+1. Choose **Apple menu > About This Mac**. This preview requires an Apple
+   Silicon (M-series) Mac running **macOS 27.0.1 or newer**. Intel Macs and older
+   macOS versions are not supported by this download.
+2. [Download the Apple Silicon installer (.dmg)](https://github.com/ktstauder1/cligriderator/releases/download/macos-v4.3.0-preview.1/cligrid-4.3.0-macos-arm64-standalone.dmg),
+   or open the release page above and choose that file under **Assets**.
+   Do not choose **Source code (zip)** or **Source code (tar.gz)**.
+3. Open the downloaded `.dmg` in Finder and drag **Cli Griderator.app** into
+   **Applications**.
+4. Eject the disk image, open **Applications**, and double-click
+   **Cli Griderator**. If macOS blocks it, follow the steps below.
+
+The standalone app includes Python, GTK, VTE and tmux; no Homebrew or separate
+Python installation is needed. Tools you run inside its terminals are installed
 separately.
+
+### Allow this preview in macOS Settings
+
+This preview is **not Developer ID signed or notarized by Apple**. Only proceed
+if you trust this project's official download and accept the preview's risks.
+Approval is not a security certification.
+
+1. Try opening the installed app first. If macOS says the developer cannot be
+   verified or Apple cannot check the app for malicious software, dismiss the
+   alert without moving the app to Trash.
+2. Choose **Apple menu > System Settings > Privacy & Security**.
+3. Scroll to **Security**, find the message about **Cli Griderator**, and click
+   **Open Anyway**.
+4. Authenticate if prompted, then choose **Open** in the confirmation dialog.
+
+Future launches of that approved copy should open normally. If **Open Anyway**
+is missing, try opening the installed app again and return to Settings; the
+option is normally available for about an hour after a blocked launch. On a
+managed work or school Mac, contact your administrator if approval is disabled.
+
+Do **not** disable Gatekeeper globally or remove quarantine with Terminal
+commands. If macOS reports that the app **will damage your computer**, contains
+malware, or is **damaged**, stop rather than bypassing that warning. Report the
+exact message through [GitHub Issues](https://github.com/ktstauder1/cligriderator/issues)
+without including secrets or private terminal output.
+
+See Apple's [safe-opening guidance](https://support.apple.com/en-us/102445) and
+[app-specific approval instructions](https://support.apple.com/guide/mac-help/open-an-app-by-overriding-security-settings-mh40617/mac).
 
 **Preview status:** the Mac app is ad-hoc signed, not Developer ID signed or
 notarized. Gatekeeper may block a downloaded copy. Clean-machine testing is
