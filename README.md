@@ -1,5 +1,35 @@
 # Cli Griderator
 
+## Linux downloads
+
+[Download Cli Griderator 4.3.0 for Linux](https://github.com/ktstauder1/cligriderator/releases/tag/linux-v4.3.0).
+
+**Debian, Ubuntu, and Pop!_OS:** download
+[`cligrid_4.3.0_all.deb`](https://github.com/ktstauder1/cligriderator/releases/download/linux-v4.3.0/cligrid_4.3.0_all.deb),
+then run this from the download directory:
+
+```bash
+sudo apt install ./cligrid_4.3.0_all.deb
+cligrid
+```
+
+**Other Linux distributions:** download
+[`cligrid-4.3.0.tar.gz`](https://github.com/ktstauder1/cligriderator/releases/download/linux-v4.3.0/cligrid-4.3.0.tar.gz).
+Install Python 3.10 or newer, PyGObject, GTK3, VTE 0.76 or newer, and tmux
+using your distribution's package manager, then run:
+
+```bash
+tar -xzf cligrid-4.3.0.tar.gz
+cd cligrid-4.3.0
+./install
+~/bin/cligrid
+```
+
+The archive installer runs as your normal desktop user and installs into your
+home directory. The Linux packages use system dependencies; they are not
+self-contained executables. Download `SHA256SUMS` from the same release to
+verify your files with `sha256sum -c SHA256SUMS --ignore-missing`.
+
 ## Mac downloads
 
 [Download the Mac preview](https://github.com/ktstauder1/cligriderator/releases/tag/macos-v4.3.0-preview.1)
