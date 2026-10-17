@@ -41,15 +41,19 @@ def verify(bundle, brew_prefix):
     wrapper = ['/usr/bin/sandbox-exec', '-p', profile]
     with tempfile.TemporaryDirectory(prefix='cligrid-grid-', dir='/tmp') as temporary:
         directory = Path(temporary)
+        home = directory / 'home'
+        home.mkdir()
+        (home / '.bash_profile').write_text("export PS1='cligrid> '\n")
         config = directory / 'cligrid'
         config.mkdir()
         (config / 'config.json').write_text(json.dumps({
             'pane_count': 2, 'cwd': temporary, 'banner': True,
         }))
         environment = {key: value for key, value in os.environ.items()
-                       if key in ('HOME', 'USER', 'LOGNAME', 'TMPDIR', 'LANG')}
+                       if key in ('USER', 'LOGNAME', 'TMPDIR', 'LANG')}
         address = str(directory / 'control.sock')
         environment.update(PATH='/usr/bin:/bin:/usr/sbin:/sbin', TERM='xterm-256color',
+                           HOME=str(home), SHELL='/bin/bash', BASH_SILENCE_DEPRECATION_WARNING='1',
                            XDG_CONFIG_HOME=temporary, XDG_CACHE_HOME=temporary,
                            XDG_RUNTIME_DIR=temporary, TMUX_TMPDIR=temporary,
                            CLIGRID_SOCKET=address, NO_COLOR='1')
@@ -70,14 +74,21 @@ def verify(bundle, brew_prefix):
                     marker = f'CLIGRID_persisted_OK_{attempt}'
                     request(address, 'run 1 ' + shlex.quote(
                         f"printf 'CLIGRID_%s_OK_%s\\n' \"$CLIGRID_SMOKE_VALUE\" {attempt}"))
-                    wait_for(lambda marker=marker: marker in request(address, 'dump 1'),
+                    wait_for(lambda marker=marker: marker in request(address, 'dump 1 --lines 2000'),
                              'shell output and session persistence')
                     request(address, 'zoom 1')
                     wait_for(lambda: bool(json.loads(request(address, 'status'))['zoom']), 'zoom')
                     request(address, 'zoom off')
+                    wait_for(lambda: not json.loads(request(address, 'status'))['zoom'], 'unzoom')
                     request(address, 'restart 1')
-                    wait_for(lambda marker=marker: marker in request(address, 'dump 1'),
+                    wait_for(lambda marker=marker: marker in request(address, 'dump 1 --lines 2000'),
                              'pane restart preserves output')
+                    restart_marker = f'CLIGRID_persisted_RESTART_{attempt}'
+                    time.sleep(2)
+                    request(address, 'run 1 ' + shlex.quote(
+                        f"printf 'CLIGRID_%s_RESTART_%s\\n' \"$CLIGRID_SMOKE_VALUE\" {attempt}"))
+                    wait_for(lambda marker=restart_marker: marker in request(address, 'dump 1'),
+                             'restarted pane accepts input and preserves shell state')
                     request(address, 'quit')
                     process.wait(timeout=10)
                     if process.returncode:
@@ -88,7 +99,7 @@ def verify(bundle, brew_prefix):
             except Exception:
                 try:
                     print(request(address, 'status'), file=sys.stderr)
-                    print(request(address, 'dump 1'), file=sys.stderr)
+                    print(request(address, 'dump 1 --lines 2000'), file=sys.stderr)
                     print(request(address, 'log 30'), file=sys.stderr)
                 except OSError:
                     pass

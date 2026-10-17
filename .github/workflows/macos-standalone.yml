@@ -41,6 +41,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: cligrid-macos-${{ matrix.architecture }}-build-evidence
+          include-hidden-files: true
           path: |
             packaging/.cache/standalone.*/notices/
             packaging/.cache/standalone.*/work/**/warn-*.txt

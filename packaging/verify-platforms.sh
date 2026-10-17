@@ -34,6 +34,25 @@ check() { # check <name> <command...>
 }
 skip() { printf '  SKIP  %s\n' "$1"; }
 
+verify_launcher_doctor() {
+    local prefix=$1 font output status
+    font=$(fc-match --format='%{family}' sans) || return 1
+    mkdir -p "$prefix/.config/cligrid" || return 1
+    /usr/bin/python3 - "$prefix/.config/cligrid/config.json" "${font%%,*}" <<'PY'
+import json
+import sys
+
+with open(sys.argv[1], "w") as handle:
+    json.dump({"font": sys.argv[2]}, handle)
+PY
+    output=$(env HOME="$prefix" XDG_CONFIG_HOME="$prefix/.config" \
+        XDG_RUNTIME_DIR="$prefix" XDG_SESSION_TYPE=x11 \
+        "$prefix/bin/cligrid" doctor)
+    status=$?
+    printf '%s\n' "$output"
+    [[ $status == 0 ]] && grep -qx '10 ok, 0 failed' <<< "$output"
+}
+
 suite() { # suite <python>: the tests, with the gi guard the CI job uses
     local python=$1 guard
     guard=$(mktemp -d)
@@ -169,8 +188,8 @@ if (( have_gi )); then
     echo 'installed launcher, from the tarball'
     check 'extract' tar -xzf "$tarball" -C "$work"
     check 'install.sh --prefix' "$work/$root/install.sh" --prefix "$work/prefix"
-    check 'launcher doctor reports 10 ok, 0 failed' bash -c \
-        "\"$work/prefix/bin/cligrid\" doctor | grep -q '10 ok, 0 failed'"
+    check 'launcher doctor with isolated desktop metadata reports 10 ok, 0 failed' \
+        verify_launcher_doctor "$work/prefix"
     check 'launcher runs and reports the pyproject version' bash -c \
         "\"$work/prefix/bin/cligrid\" version | grep -qx 'cligrid $version'"
     check 'launcher survives deleting the extract' bash -c \
