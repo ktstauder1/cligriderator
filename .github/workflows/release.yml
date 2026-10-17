@@ -1,0 +1,86 @@
+name: Release
+# Pushing a tag such as vX.Y.Z runs the tests and the platform checks, builds
+# the Linux/macOS/Windows archive, the zip and the Debian package, writes
+# SHA256SUMS, and publishes them all as a GitHub Release. The tag has to match
+# the version in pyproject.toml, which is the one place the version lives.
+on:
+  push:
+    tags: ['v*']
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Tag must match pyproject.toml
+        id: meta
+        run: |
+          version=$(python3 -c "import re;print(re.search(r'^version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read(), re.M).group(1))")
+          tag=${GITHUB_REF_NAME#v}
+          if [ "$tag" != "$version" ]; then
+            echo "tag v$tag does not match pyproject.toml version $version" >&2
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Desktop dependencies
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            python3-gi gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 librsvg2-common tmux
+          sudo apt-get install -y --no-install-recommends gir1.2-vte-2.91 \
+            || sudo apt-get install -y --no-install-recommends gir1.2-vte-3.91
+          sudo apt-get install -y --no-install-recommends nsis xorriso librsvg2-bin
+      - name: Lint and tests
+        run: |
+          python3 -m compileall -q .
+          python3 -m pip install --quiet ruff
+          ruff check .
+          python3 -m unittest discover -p 'test_*.py'
+      - name: Build and verify every artifact
+        run: bash packaging/verify-platforms.sh
+      - name: Checksums
+        working-directory: packaging/dist
+        run: |
+          v=${{ steps.meta.outputs.version }}
+          sha256sum "cligrid-$v.tar.gz" "cligrid-$v.zip" "cligrid_${v}_all.deb" \
+            "cligrid-$v.exe" "cligrid-$v.dmg" > SHA256SUMS
+          cat SHA256SUMS
+      - name: Release notes from CHANGELOG.md
+        run: |
+          python3 - "${{ steps.meta.outputs.version }}" > packaging/dist/NOTES.md <<'PY'
+          import re
+          import sys
+
+          version = sys.argv[1]
+          text = open("CHANGELOG.md", encoding="utf-8").read()
+          match = re.search(r"^## %s\b.*?(?=^## |\Z)" % re.escape(version), text, re.M | re.S)
+          body = match.group(0).split("\n", 1)[1].strip() if match else ""
+          print(body or "See CHANGELOG.md.")
+          print()
+          print("## Install")
+          print()
+          print("Linux: extract the archive and run `./install`.")
+          print("macOS: open `cligrid-%s.dmg` and double-click Install Cli Griderator (Homebrew required)." % version)
+          print("Windows: run `cligrid-%s.exe` (WSL 2 + WSLg)." % version)
+          print("Debian/Ubuntu: `sudo apt install ./cligrid_%s_all.deb`." % version)
+          print()
+          print("Verify a download with `sha256sum -c SHA256SUMS --ignore-missing`.")
+          PY
+      - name: Publish
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          v=${{ steps.meta.outputs.version }}
+          gh release create "$GITHUB_REF_NAME" \
+            --title "Cli Griderator $v" \
+            --notes-file packaging/dist/NOTES.md \
+            "packaging/dist/cligrid-$v.tar.gz" \
+            "packaging/dist/cligrid-$v.zip" \
+            "packaging/dist/cligrid_${v}_all.deb" \
+            "packaging/dist/cligrid-$v.exe" \
+            "packaging/dist/cligrid-$v.dmg" \
+            packaging/dist/SHA256SUMS

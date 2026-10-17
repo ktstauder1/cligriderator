@@ -1,0 +1,43 @@
+# Maintainer: Kutty Stauder
+# System package for Arch. The grid still needs GTK3, VTE, tmux and
+# python-gobject from the distribution; this package only installs the
+# Python modules, launcher, desktop entry, icon and man page.
+pkgname=cligrid
+pkgver=4.3.0
+pkgrel=1
+pkgdesc="GTK3 and VTE terminal grid backed by tmux"
+arch=('any')
+url="https://kuttystauder.com/development/"
+license=('LicenseRef-Cligrid')
+depends=('python' 'python-gobject' 'gtk3' 'vte3' 'tmux')
+source=("$pkgname-$pkgver.tar.gz")
+sha256sums=('SKIP')
+
+package() {
+  cd "$srcdir/$pkgname-$pkgver"
+  install -d "$pkgdir/usr/share/cligrid" \
+             "$pkgdir/usr/bin" \
+             "$pkgdir/usr/share/applications" \
+             "$pkgdir/usr/share/man/man1" \
+             "$pkgdir/usr/share/licenses/$pkgname" \
+             "$pkgdir/usr/share/icons/hicolor/scalable/apps"
+  install -m644 cligrid*.py "$pkgdir/usr/share/cligrid/"
+  install -m644 cligrid.1 "$pkgdir/usr/share/man/man1/cligrid.1"
+  install -m644 LICENSE "$pkgdir/usr/share/licenses/$pkgname/LICENSE"
+  install -m644 icons/cligrid.svg \
+    "$pkgdir/usr/share/icons/hicolor/scalable/apps/cligrid.svg"
+  printf '%s\n' '#!/bin/sh' 'exec /usr/bin/python3 /usr/share/cligrid/cligrid.py "$@"' \
+    > "$pkgdir/usr/bin/cligrid"
+  chmod 755 "$pkgdir/usr/bin/cligrid"
+  cat > "$pkgdir/usr/share/applications/cligrid.desktop" << 'EOF'
+[Desktop Entry]
+Type=Application
+Name=Cli Griderator
+Comment=Persistent terminal grid
+Exec=/usr/bin/cligrid
+Icon=cligrid
+Terminal=false
+Categories=System;TerminalEmulator;
+StartupWMClass=cligrid
+EOF
+}

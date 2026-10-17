@@ -1,0 +1,15 @@
+__pycache__/
+*.tmp
+.troika/
+.ruff_cache/
+packaging/dist/
+packaging/.cache/
+docs/*-draft.pdf
+.DS_Store
+*.log
+.env
+.env.*
+!.env.example
+*.p12
+*.p8
+*.key

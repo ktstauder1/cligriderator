@@ -1,0 +1,47 @@
+name: Standalone macOS test build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: macos-15
+            architecture: arm64
+          - runner: macos-15-intel
+            architecture: x86_64
+    runs-on: ${{ matrix.runner }}
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify build architecture
+        env:
+          EXPECTED_ARCHITECTURE: ${{ matrix.architecture }}
+        run: test "$(uname -m)" = "$EXPECTED_ARCHITECTURE"
+      - name: Install build dependencies (not required by app users)
+        run: brew install gtk+3 vte3 pygobject3 tmux ncurses gobject-introspection librsvg adwaita-icon-theme
+      - name: Build, relocate, verify without Homebrew access, and create DMG
+        run: bash packaging/macos/build-standalone.sh
+      - name: Save verified test image
+        uses: actions/upload-artifact@v4
+        with:
+          name: cligrid-macos-${{ matrix.architecture }}-standalone
+          path: |
+            packaging/dist/*-macos-${{ matrix.architecture }}-standalone.dmg
+            packaging/dist/*-macos-${{ matrix.architecture }}-standalone.dmg.sha256
+          if-no-files-found: error
+      - name: Save dependency inventory and build warnings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cligrid-macos-${{ matrix.architecture }}-build-evidence
+          path: |
+            packaging/.cache/standalone.*/notices/
+            packaging/.cache/standalone.*/work/**/warn-*.txt
+          if-no-files-found: ignore

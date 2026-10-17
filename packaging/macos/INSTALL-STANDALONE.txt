@@ -1,0 +1,20 @@
+Cli Griderator — self-contained macOS test build
+
+Drag Cli Griderator.app into Applications, eject the disk image, then open
+Cli Griderator from Applications. Homebrew and Python are not required.
+
+This build uses ad-hoc signing, not an Apple Developer ID certificate, and
+has not been notarized. It is intended for testing before public release.
+
+The filename identifies the CPU: arm64 for Apple Silicon, x86_64 for Intel.
+Use the same or a newer macOS release than the build machine's version
+(recorded in the app's Info.plist).
+
+Terminal commands can use:
+    "/Applications/Cli Griderator.app/Contents/MacOS/cligrid" doctor
+
+Existing configuration is retained. Menlo is used for a new configuration.
+Additional command-line tools you run inside a pane must be installed
+separately. The app includes Python, GTK, VTE, and tmux for its own operation.
+
+Dependency notices and build metadata are inside the app's Resources folder.

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 16 16">
+  <!-- 16px variant: a brass tile with 2px panes and 2px bars, on whole pixels. -->
+  <defs>
+    <linearGradient id="brass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f5c85c"/>
+      <stop offset="1" stop-color="#b8792a"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="14" height="14" rx="3" fill="url(#brass)"/>
+  <g fill="#15111b">
+    <rect x="3" y="3" width="2" height="2"/>
+    <rect x="7" y="3" width="2" height="2"/>
+    <rect x="11" y="3" width="2" height="2"/>
+    <rect x="3" y="7" width="2" height="2"/>
+    <rect x="11" y="7" width="2" height="2"/>
+    <rect x="3" y="11" width="2" height="2"/>
+    <rect x="7" y="11" width="2" height="2"/>
+    <rect x="11" y="11" width="2" height="2"/>
+  </g>
+  <rect x="7" y="7" width="2" height="2" fill="#2f8a81"/>
+</svg>

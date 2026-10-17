@@ -1,0 +1,195 @@
+.TH CLIGRID 1 "September 2026" "Cli Griderator"
+.SH NAME
+cligrid \- persistent GTK3 and VTE terminal grid
+.SH SYNOPSIS
+.B cligrid
+.RI [ verb " [arguments]]"
+.SH DESCRIPTION
+Start or raise a grid of persistent tmux terminals. Six panes are shown by
+ default; one to twenty panes are supported. Sessions survive hiding,
+restarting, quitting and crashes. Reset and run-all replace sessions.
+.SH COMMANDS
+Pane numbers are one-based. Optional pane numbers refer to the focused pane.
+Use help for command argument details in the installed version.
+.PP
+Commands that end sessions, drop panes or close the window (reset, all,
+remove, quit and their aliases) are refused when the request comes from a
+process running inside one of the grid's own panes, such as a coding agent,
+unless
+.B \-\-force
+follows the verb, as in
+.BR "cligrid reset \-\-force 2" .
+Set
+.B guard
+to
+.B off
+in the configuration to turn this off. Every other command is unaffected.
+.TP
+.B show, raise
+Show the window.
+.TP
+.B hide
+Hide the window without ending sessions.
+.TP
+.B toggle
+Minimize or restore the window.
+.TP
+.B zoom [N|off]
+Fill the window with one pane, or restore the grid.
+.TP
+.B panes N, windows N
+Set the pane count, from 1 to 20.
+.TP
+.B remove [N], close-window [N]
+Remove a pane from the grid.
+.TP
+.B restart [N]
+Reconnect the pane while keeping its session.
+.TP
+.B reset [N], fresh [N], new [N]
+End and replace the selected session, or all sessions when no pane is given.
+.TP
+.B all command, fill command, run-all command
+Replace all pane sessions with the specified command.
+.TP
+.B fit
+Reapply the configured window fit.
+.TP
+.B focus N
+Focus pane N.
+.TP
+.B swap A B
+Exchange the panes at positions A and B.
+.TP
+.B status
+Show status; output is JSON when piped or when requested with --json.
+.TP
+.B quit
+Exit the grid while keeping tmux sessions running.
+.TP
+.B send
+Send text to a pane.
+.TP
+.B run
+Run a command in a pane.
+.TP
+.B dump N [\-\-lines K]
+The last K lines of a pane (default 40). A tmux pane is read through
+tmux, so scrollback is included; any other pane gives what is on screen.
+.TP
+.B wait N \-\-until PATTERN [\-\-timeout SECONDS]
+Wait for a pane output pattern, with a timeout. The pattern is a regular
+expression of at most 256 characters, matched against the pane's last rows.
+.TP
+.B events [\-\-kinds a,b] [\-\-since SEQ]
+Stream recorded events as JSON lines, optionally filtered by kind and
+replayed from a sequence number. A client that stops reading is
+disconnected once it holds a megabyte of unread events.
+.TP
+.B watch
+Follow events; the same as events.
+.TP
+.B help
+Show command help. Also available as --help.
+.TP
+.B ws, workspace
+List, select or manage saved workspaces.
+.TP
+.B layout [name | \-\-list]
+Select the grid layout, or list the shapes.
+.TP
+.B stack A B ..., stack \-\-clear
+Put panes in one cell as tabs, or undo every stack.
+.TP
+.B theme
+Select the theme.
+.TP
+.B doctor
+Report Python, GTK/VTE, tmux, font, configuration, icons, launcher,
+desktop entry, runtime directory and desktop session checks with suggested fixes.
+.TP
+.B rename
+Rename a pane.
+.TP
+.B move
+Move a pane.
+.TP
+.B palette
+Open the command palette.
+.TP
+.B find
+Search terminal output.
+.TP
+.B log [K]
+The last K lines of the window's log (default 40).
+.TP
+.B notify text
+Show the text as a toast in the grid and as a desktop notification.
+.TP
+.B keymap
+The active shortcuts and the actions they can run, as JSON.
+.TP
+.B state
+Show pane activity states.
+.TP
+.B version
+Show the application version.
+.SH FILES
+.TP
+.I ~/.config/cligrid/config.json
+Settings, created on first change. Defaults include maximized fit,
+JetBrainsMono Nerd Font at 11 points, six panes and tmux sessions g1 through g6.
+Schema 2 stores named workspaces and global preferences.
+.B guard
+is
+.B panes
+by default; see COMMANDS.
+.TP
+.I ~/.config/cligrid/state.json
+The last arrangement: pane order, active pane, zoom, layout and stacks.
+.TP
+.I ~/.cache/cligrid.log
+The window's log, trimmed to its last 256 KB at each launch.
+.TP
+.I ~/.config/kitty/kitty.conf
+Terminal preferences (padding, copy-on-select) and, when the theme setting is
+kitty, the terminal colours. The grid otherwise uses its own palette.
+.TP
+.I ~/bin/cligrid
+User launcher created by install.sh; invokes the application copied to
+~/.local/share/cligrid, so the checkout or extract can be removed afterwards.
+.TP
+.I ~/.local/share/applications/cligrid.desktop
+Desktop application entry. A desktop copy is installed at ~/Desktop/cli-griderator.desktop.
+.TP
+.I ~/.local/share/icons/hicolor
+Scalable and pixel-sized application icons.
+.SH ENVIRONMENT
+.TP
+.B XDG_CONFIG_HOME
+Configuration root; defaults to ~/.config.
+.TP
+.B XDG_RUNTIME_DIR
+Socket directory; defaults to /tmp.
+.TP
+.B CLIGRID_WORKSPACE
+Workspace name used when migrating a legacy configuration.
+.TP
+.B CLIGRID, CLIGRID_SLOT
+Set to 1 and the pane number in every pane's environment. The guard reads
+CLIGRID from a client process to tell a request from inside the grid.
+.TP
+.B CLIGRID_SOCKET
+Full path of the control socket, for a second grid beside the first.
+.TP
+.B NO_COLOR
+Disable terminal colors. Diagnostic reports are always plain text.
+.SH INSTALLATION
+Run bash install.sh from any directory. No network access is needed.
+The optional --prefix DIRECTORY replaces the home-directory installation root.
+The installer refuses root and skips files whose contents and modes are correct.
+Icon rendering uses system Python, PyGObject and GdkPixbuf with SVG support.
+The Debian builder is packaging/build-deb.sh; its package installs under /usr.
+.SH SEE ALSO
+.BR tmux (1),
+.BR fc-match (1)

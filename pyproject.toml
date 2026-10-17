@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "cligrid"
+version = "4.3.0"
+description = "Cli Griderator GTK3 and VTE terminal grid"
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.10"
+authors = [{ name = "Kutty Stauder" }]
+
+[project.urls]
+Homepage = "https://kuttystauder.com/development/"
+
+[project.scripts]
+cligrid = "cligrid:main_entry"
+
+[tool.ruff]
+line-length = 110
+target-version = "py310"
+extend-exclude = ["packaging/dist", "packaging/.cache", ".troika"]
+
+[tool.ruff.lint]
+# E/F/W: pyflakes and pycodestyle. B: bugbear. C901: complexity, so a verb
+# table cannot grow back into a 48-branch chain. PLW1510: every subprocess.run
+# says whether it checks the exit status.
+select = ["E", "F", "W", "B", "C901", "PLW1510"]
+ignore = [
+  "B905",  # zip(strict=) everywhere reads worse than it protects here
+  "B008",  # default arguments that call functions are used deliberately
+]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 20
+
+[tool.ruff.lint.per-file-ignores]
+# Tests set sys.dont_write_bytecode before importing the module under test.
+"test_*.py" = ["E402"]
+
+[tool.setuptools]
+# Every cligrid*.py in the repository. test_cligrid_release.py fails when a
+# module is added here or on disk without the other.
+py-modules = [
+  "cligrid", "cligrid_art", "cligrid_control", "cligrid_doctor",
+  "cligrid_keymap", "cligrid_layout", "cligrid_palette", "cligrid_state",
+  "cligrid_workspace",
+]

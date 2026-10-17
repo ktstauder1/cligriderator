@@ -1,0 +1,67 @@
+name: Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Version from pyproject.toml
+        id: meta
+        run: |
+          version=$(python3 -c "import re;print(re.search(r'^version\s*=\s*\"([^\"]+)\"', open('pyproject.toml').read(), re.M).group(1))")
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Compile
+        run: python3 -m compileall -q .
+      - name: Lint (rules in pyproject.toml)
+        run: |
+          python3 -m pip install --quiet ruff
+          ruff check .
+      - name: Test (skip unavailable GI imports)
+        shell: bash
+        run: |
+          guard=$(mktemp -d)
+          trap 'rm -rf "$guard"' EXIT
+          cat > "$guard/sitecustomize.py" <<'PY'
+          import importlib.util
+          import unittest
+
+          if importlib.util.find_spec("gi") is None:
+              original = unittest.TestLoader._get_module_from_name
+
+              def guarded_import(self, name):
+                  try:
+                      return original(self, name)
+                  except ModuleNotFoundError as exc:
+                      if exc.name == "gi" or exc.name.startswith("gi."):
+                          raise unittest.SkipTest("PyGObject (gi) is unavailable") from exc
+                      raise
+
+              unittest.TestLoader._get_module_from_name = guarded_import
+          PY
+          PYTHONPATH="$guard${PYTHONPATH:+:$PYTHONPATH}" python3 -m unittest discover -p 'test_*.py'
+      - name: Desktop dependencies for the installer checks
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends \
+            python3-gi gir1.2-gtk-3.0 gir1.2-gdkpixbuf-2.0 librsvg2-common tmux
+          sudo apt-get install -y --no-install-recommends gir1.2-vte-2.91 \
+            || sudo apt-get install -y --no-install-recommends gir1.2-vte-3.91
+      - name: Platform installers
+        run: bash packaging/verify-platforms.sh
+      - name: Upload Linux, macOS and Windows archives
+        uses: actions/upload-artifact@v4
+        with:
+          name: cligrid-${{ steps.meta.outputs.version }}-linux-macos-windows
+          path: |
+            packaging/dist/cligrid-${{ steps.meta.outputs.version }}.tar.gz
+            packaging/dist/cligrid-${{ steps.meta.outputs.version }}.zip
+          if-no-files-found: error
+      - name: Upload Debian package
+        uses: actions/upload-artifact@v4
+        with:
+          name: cligrid-${{ steps.meta.outputs.version }}-deb
+          path: packaging/dist/cligrid_${{ steps.meta.outputs.version }}_all.deb
+          if-no-files-found: error

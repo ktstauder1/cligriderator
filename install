@@ -1,0 +1,36 @@
+#!/usr/bin/env bash
+# Cli Griderator: pick the installer for this machine.
+#
+#   ./install                 Linux or macOS
+#   ./install --prefix DIR    forwarded to the platform installer
+#
+# On Windows this prints the PowerShell command, or runs it from Git Bash
+# when powershell.exe is on PATH.
+set -euo pipefail
+
+root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd -P)
+os=$(uname -s)
+
+case $os in
+    Darwin)
+        exec bash "$root/packaging/macos/install-macos.sh" "$@"
+        ;;
+    Linux)
+        exec bash "$root/install.sh" "$@"
+        ;;
+    MINGW*|MSYS*|CYGWIN*)
+        script=$root/packaging/windows/install-windows.ps1
+        if command -v powershell.exe >/dev/null 2>&1; then
+            exec powershell.exe -ExecutionPolicy Bypass -File "$script" "$@"
+        fi
+        printf 'On Windows, from PowerShell:\n\n  powershell -ExecutionPolicy Bypass -File %s\n' "$script" >&2
+        exit 2
+        ;;
+    *)
+        printf 'Unsupported OS: %s\n\n' "$os" >&2
+        printf '  Linux:    ./install.sh\n' >&2
+        printf '  macOS:    packaging/macos/install-macos.sh\n' >&2
+        printf '  Windows:  packaging/windows/install-windows.ps1\n' >&2
+        exit 1
+        ;;
+esac
