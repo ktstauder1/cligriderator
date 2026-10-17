@@ -36,7 +36,7 @@
     "directories": { "output": "out" },
     "files": ["src/**", "dist/**", "assets/**", "package.json", "LICENSE", "THIRD-PARTY-NOTICES.txt"],
     "asarUnpack": ["node_modules/node-pty/**"],
-    "npmRebuild": true,
+    "npmRebuild": false,
     "win": {
       "target": ["nsis", "zip"],
       "icon": "assets/icon.ico",

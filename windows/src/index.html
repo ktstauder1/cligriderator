@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'self' 'unsafe-inline'; font-src 'self'; img-src 'self' data:; connect-src 'none'; base-uri 'none'; form-action 'none'">
+  <title>Cli Griderator</title>
+  <link rel="stylesheet" href="xterm.css">
+  <link rel="stylesheet" href="style.css">
+  <script defer src="renderer.js"></script>
+</head>
+<body>
+  <header class="toolbar">
+    <div class="brand"><span class="brand-mark" aria-hidden="true">▦</span><h1>CLI GRIDERATOR</h1></div>
+    <label class="sr-only" for="workspace">Workspace</label><select id="workspace"></select>
+    <button id="workspaces" title="Manage workspaces" aria-label="Manage workspaces">···</button>
+    <div class="divider"></div>
+    <nav id="switcher" aria-label="Terminal panes"></nav>
+    <button id="add" title="Add terminal" aria-label="Add terminal">+</button>
+    <div class="spacer"></div>
+    <label class="sr-only" for="layout">Layout</label><select id="layout"></select>
+    <button id="zoom" title="Zoom focused pane (Ctrl+Shift+Z)">Zoom</button>
+    <button id="palette" title="Command palette (Ctrl+Shift+P)">Commands</button>
+    <button id="settings" title="Settings (Ctrl+Shift+,)">Settings</button>
+  </header>
+  <main id="grid" aria-label="Terminal grid"></main>
+  <footer><span class="status-dot" aria-hidden="true"></span><span id="status">Opening terminals…</span><div class="spacer"></div><button id="broadcast">Send command to all…</button><button id="hide">Hide to tray</button></footer>
+  <div id="toast" role="status" aria-live="polite" hidden></div>
+  <dialog id="dialog" aria-labelledby="dialog-title"><form id="dialog-form"><h2 id="dialog-title"></h2><div id="dialog-body"></div><div id="dialog-actions"></div></form></dialog>
+</body>
+</html>

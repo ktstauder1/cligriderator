@@ -1,0 +1,85 @@
+name: Standalone Windows build
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, 'feature/windows-*']
+    paths: ['windows/**', '.github/workflows/windows-standalone.yml', 'LICENSE', 'icons/**']
+  pull_request:
+    paths: ['windows/**', '.github/workflows/windows-standalone.yml', 'LICENSE', 'icons/**']
+
+permissions:
+  contents: read
+
+jobs:
+  windows:
+    runs-on: windows-2022
+    timeout-minutes: 25
+    defaults:
+      run:
+        working-directory: windows
+        shell: pwsh
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: windows/package-lock.json
+      - name: Install locked dependencies without lifecycle scripts
+        run: npm ci --ignore-scripts
+      - name: Install the reviewed Electron runtime
+        run: node node_modules/electron/install.js
+      - name: Validate the prebuilt Windows terminal module
+        run: node -e "require('node-pty'); console.log('Windows PTY module loaded')"
+      - name: Check and test
+        run: |
+          npm run check
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm test
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm audit --omit=dev --audit-level=moderate
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run build
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Test terminal interface
+        run: |
+          npx playwright install chromium
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+          npm run test:ui
+          if ($LASTEXITCODE) { exit $LASTEXITCODE }
+      - name: Build offline installer and portable archive
+        run: npm run dist
+        env:
+          CSC_IDENTITY_AUTO_DISCOVERY: 'false'
+      - name: Test packaged app with only Windows tools on PATH
+        run: ./scripts/verify-windows.ps1 -Executable 'out/win-unpacked/Cli Griderator.exe'
+      - name: Install in a path with spaces and test the installed application
+        run: |
+          $installer = Get-ChildItem out/*-Setup.exe | Select-Object -First 1
+          if (-not $installer) { throw 'Installer missing' }
+          $destination = Join-Path $env:RUNNER_TEMP 'Cligriderator Installed Test'
+          $process = Start-Process -FilePath $installer.FullName -ArgumentList "/S /D=$destination" -Wait -PassThru
+          if ($process.ExitCode -ne 0) { throw "Installer failed: $($process.ExitCode)" }
+          ./scripts/verify-windows.ps1 -Executable "$destination/Cli Griderator.exe" -Report 'test-results/installed'
+      - name: Hash downloads
+        run: |
+          Get-ChildItem out/*.exe,out/*.zip | ForEach-Object {
+            $hash = (Get-FileHash $_.FullName -Algorithm SHA256).Hash.ToLower()
+            "$hash  $($_.Name)"
+          } | Set-Content -Encoding ascii out/SHA256SUMS.txt
+      - name: Save verified Windows downloads
+        uses: actions/upload-artifact@v4
+        with:
+          name: cligriderator-windows-x64
+          if-no-files-found: error
+          path: |
+            windows/out/*-Setup.exe
+            windows/out/*.zip
+            windows/out/SHA256SUMS.txt
+      - name: Save test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-evidence
+          path: windows/test-results/
