@@ -77,8 +77,10 @@ npm run dist
 ./scripts/verify-windows.ps1 -Executable 'out/win-unpacked/Cli Griderator.exe'
 ```
 
-The lockfile pins dependencies. node-pty 1.1.0 ships Windows x64 Node-API prebuilds;
+The lockfile pins dependencies. node-pty 1.2.0-beta.14 ships Windows x64 Node-API prebuilds;
 the package preserves the native modules and their helpers outside the ASAR archive.
+This exact node-pty prerelease includes the upstream Windows handle-race fix
+(microsoft/node-pty#922); 1.1.0 crashed during concurrent terminal shutdown.
 The app uses the included ConPTY DLL and waits for shell-exit callbacks at shutdown.
 Do not turn on native rebuilds or remove helpers without testing the installed app.
 Third-party notices are generated from the installed runtime dependencies.
