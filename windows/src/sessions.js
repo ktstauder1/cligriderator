@@ -14,7 +14,7 @@ export function shellOptions(pane, platform=process.platform) {
   return {file:'/bin/bash',args:pane.command?['-lc',pane.command]:['--noprofile','--norc'],cwd};
 }
 export class Sessions {
-  constructor(pty, emit) { this.pty=pty; this.emit=emit; this.items=new Map(); }
+  constructor(pty, emit) { this.pty=pty; this.emit=emit; this.items=new Map(); this.stopping=new Map(); }
   open(pane) {
     if (!this.items.has(pane.id)) {
       if (this.items.size>=60) throw new Error('60 active terminals reached. Close a workspace first.');
@@ -64,17 +64,20 @@ export class Sessions {
     this.alive(id).resize(cols,rows);
   }
   stop(id) {
+    if (this.stopping.has(id)) return this.stopping.get(id);
     const item=this.items.get(id); this.items.delete(id);
     if (!item || item.exitCode!==null)return Promise.resolve();
     // Native PTY callbacks must finish before Electron tears down its Node environment.
-    return new Promise((resolve,reject)=>{
+    const stopping=new Promise((resolve,reject)=>{
       const timeout=setTimeout(()=>reject(new Error('Terminal did not finish stopping')),10000);
       item.stopped=()=>{clearTimeout(timeout);resolve();};
       try {item.child.resume();item.child.kill();}
       catch(error){clearTimeout(timeout);reject(error);}
-    });
+    }).finally(()=>this.stopping.delete(id));
+    this.stopping.set(id,stopping);
+    return stopping;
   }
   async restart(pane) { await this.stop(pane.id); return this.open(pane); }
-  retain(ids) { return Promise.all([...this.items.keys()].filter(id=>!ids.has(id)).map(id=>this.stop(id))); }
+  retain(ids) { return Promise.all([...this.stopping.values(), ...[...this.items.keys()].filter(id=>!ids.has(id)).map(id=>this.stop(id))]); }
   dispose() { return this.retain(new Set()); }
 }

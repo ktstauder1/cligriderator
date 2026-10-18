@@ -31,12 +31,14 @@ async function exit() {
   await stopAndQuit();
 }
 async function stopAndQuit() {
+  if (quitting) return;
   quitting=true;
   try { await sessions?.dispose(); app.quit(); }
   catch(error){quitting=false;dialog.showErrorBox('Could not stop all terminals',error.message);}
 }
 function handle(channel, fn) {
   ipcMain.handle(channel,async (event,...args)=>{
+    if (quitting || !win || win.isDestroyed()) throw new Error('Application is closing');
     if (event.sender!==win.webContents || event.senderFrame!==win.webContents.mainFrame || event.senderFrame.url!==pageUrl) throw new Error('Untrusted window');
     return fn(...args);
   });
@@ -138,8 +140,10 @@ async function start() {
     let code=0;
     try { await runSmoke({win,sessions,state}); }
     catch (error) { console.error(error); code=1; }
-    finally { await sessions.dispose(); }
-    app.exit(code);
+    process.exitCode=code;
+    // Exercise the same graceful shutdown as the tray; forced app.exit can tear
+    // down Node while ConPTY native callbacks and renderer IPC are still draining.
+    await stopAndQuit();
   }
 }
 if (!smoke && !app.requestSingleInstanceLock()) app.quit();

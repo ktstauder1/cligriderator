@@ -47,3 +47,13 @@ test('output is bounded and terminal input and sizes are validated', () => {
   sessions.write(pane.id,'hello\r'); assert.deepEqual(pty.children[0].writes,['hello\r']);
   pty.children[0].exit({exitCode:1}); assert.throws(()=>sessions.write(pane.id,'bad'));
 });
+
+test('concurrent shutdown waits for terminals already being stopped', async()=>{
+  const pty=fakePty(),sessions=new Sessions(pty,()=>{}),pane=newPane();
+  sessions.open(pane);pty.children[0].kill=function(){this.killed=true;};
+  const first=sessions.stop(pane.id);
+  let done=false;const second=sessions.dispose().then(()=>done=true);
+  await new Promise(resolve=>setImmediate(resolve));
+  try { assert.equal(done,false); }
+  finally { pty.children[0].exit({exitCode:0});await Promise.all([first,second]); }
+});
